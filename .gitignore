@@ -1,0 +1,10 @@
+build/
+*.egg
+*.egg-info
+*.pyc
+*.pyo
+*.swo
+*.swp
+*~
+.DS_Store
+parser.out

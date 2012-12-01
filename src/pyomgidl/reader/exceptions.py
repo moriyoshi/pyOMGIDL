@@ -1,0 +1,4 @@
+class IDLSyntaxError(Exception):
+    pass
+
+
