@@ -58,3 +58,6 @@ class INodeVisitor(Interface):
     def visit_field_def(node):
         pass
 
+    def visit_const_decl(node):
+        pass
+

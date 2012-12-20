@@ -125,6 +125,9 @@ class InterfaceGenerator(object):
     def visit_field_def(self, node):
         pass
 
+    def visit_const_decl(self, node):
+        pass
+
     def __call__(self, spec):
         walk_ast_nodes(spec, self)
 

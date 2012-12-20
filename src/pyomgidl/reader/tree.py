@@ -403,6 +403,8 @@ def walk_ast_nodes(node, visitor):
         visitor.visit_operation_def(node)
     elif isinstance(node, FieldDef):
         visitor.visit_field_def(node)
+    elif isinstance(node, ConstDecl):
+        visitor.visit_const_decl(node)
 
     if isinstance(node, DefinitionContainer):
         for definition in node.definitions:
