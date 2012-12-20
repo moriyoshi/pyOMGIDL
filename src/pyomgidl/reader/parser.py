@@ -87,7 +87,7 @@ def p_module(p):
     if pragma_prefix is not None:
         prefix_match = re.match(r'"((?:[^"]|\\")*)"|\'((?:[^\']|\\\')*)\'', pragma_prefix)
         if not prefix_match:
-            p.raise_syntax_error("Invalid value specified for #pragma prefix: %s" % pragma_prefix)
+            raise_syntax_error(p, "Invalid value specified for #pragma prefix: %s" % pragma_prefix)
         prefix = prefix_match.group(1) or prefix_match.group(2)
         if prefix != "":
             prefix += "."
@@ -105,9 +105,9 @@ def p_interface_cache_ident(p):
     if isinstance(p[1], basestring):
         value = p[1].lower()
         if value == 'object':
-            p.raise_syntax_error("Interfaces cannot be named `Object'")
+            raise_syntax_error(p, "Interfaces cannot be named `Object'")
         elif value == 'typecode':
-            p.raise_syntax_error("Interfaces cannot be named `TypeCode'")
+            raise_syntax_error(p, "Interfaces cannot be named `TypeCode'")
     p[0] = p[1]
 
 def p_interface(p):
@@ -403,7 +403,7 @@ def p_op_param_type_spec_illegal(p):
     op_param_type_spec_illegal : sequence_type
         | constr_type_spec
     '''
-    p.raise_syntax_error('Illegal type specified for parameter or attribute: %s' % p[1])
+    raise_syntax_error(p, 'Illegal type specified for parameter or attribute: %s' % p[1])
 
 def p_op_param_type_spec(p):
     '''
@@ -485,7 +485,7 @@ def p_param_decl(p):
     param_decl : z_props param_attribute param_type_spec simple_declarator
     '''
     if p[2] is None:
-        p.raise_syntax_error("Missing direction attribute")
+        raise_syntax_error(p, "Missing direction attribute")
     p[0] = Parameter(name=p[4], attributes=p[2], type=p[3], properties=p[1])
 
 def p_param_attribute(p):
@@ -1102,9 +1102,9 @@ def p_error(p):
     else:
         raise IDLSyntaxError('Unexpected EOF')
 
+def raise_syntax_error(p, msg):
+    raise IDLSyntaxError(msg + ' at line %d' % p.lexer.lineno)
+
 def parser(**kwargs):
     retval = yacc.yacc(tabmodule='parsertab', outputdir=os.path.dirname(__file__), **kwargs)
-    def raise_syntax_error(msg):
-        raise IDLSyntaxError(msg + ' at line %d' % p.lexer.lineno)
-    retval.raise_syntax_error = raise_syntax_error
     return retval
