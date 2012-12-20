@@ -113,6 +113,8 @@ tokens = [
     'TOK_LT',
     'TOK_GT',
     'TOK_EQUAL',
+    'TOK_QUESTION',
+    'TOK_OPTIONAL',
     ]
 
 t_TOK_COLON = r':'
@@ -138,13 +140,13 @@ t_TOK_EQUAL = r'='
 t_TOK_OP_SCOPE = r'::'
 t_TOK_OP_SHL = r'<<'
 t_TOK_OP_SHR = r'>>'
+t_TOK_QUESTION = r'\?'
 
-string_tokens = {
+common_string_tokens = {
     'any': 'TOK_ANY',
     'attribute': 'TOK_ATTRIBUTE',
     'boolean': 'TOK_BOOLEAN',
     'case': 'TOK_CASE',
-    'char': 'TOK_CHAR',
     'const': 'TOK_CONST',
     'context': 'TOK_CONTEXT',
     'default': 'TOK_DEFAULT',
@@ -179,10 +181,14 @@ string_tokens = {
     'varargs': 'TOK_VARARGS',
     'valuetype': 'TOK_VALUETYPE',
     'void': 'TOK_VOID',
-    'wchar': 'TOK_WCHAR',
     'wstring': 'TOK_WSTRING',
     'TypeCode': 'TOK_TYPECODE',
     'Object': 'TOK_OBJECT',
+    }
+
+omgidl_string_tokens = {
+    'char': 'TOK_CHAR',
+    'wchar': 'TOK_WCHAR',
     }
 
 def t_TOK_OCTAL(t):
@@ -221,9 +227,17 @@ t_TOK_DQSTRING = r'''"(?:[^"]|\\")*"'''
 
 def t_INITIAL_PROP_NATIVE_TOK_IDENT(t):
     r'''[A-Za-z_][A-Za-z0-9_]*'''
-    t_type = string_tokens.get(t.value)
+    t_type = common_string_tokens.get(t.value)
     if t_type is not None:
         t.type = t_type
+    else:
+        if t.lexer.webidl:
+            if t.value == 'optional':
+                t.type = 'TOK_OPTIONAL'
+        else:
+            t_type = omgidl_string_tokens.get(t.value)
+            if t_type is not None:
+                t.type = t_type
     if t_type == 'TOK_NATIVE':
         t.lexer.push_state('NATIVE') 
     return t
@@ -290,7 +304,8 @@ def t_ANY_BLOCK_COMMENT(t):
 def t_ANY_error(t):
     raise IDLSyntaxError('Illegal token: %s' % t.value)
 
-def lexer(**kwargs):
+def lexer(webidl=False, **kwargs):
     retval = lex.lex(lextab='lextab', optimize=1, outputdir=os.path.dirname(__file__), **kwargs)
+    retval.webidl = webidl
     retval.pragma = {}
     return retval

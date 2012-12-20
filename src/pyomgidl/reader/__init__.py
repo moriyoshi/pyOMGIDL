@@ -9,5 +9,5 @@ def initializePLY():
     lexer()
     parser()
 
-def parse_into_ast(f, source=None):
-    return parser().parse(preprocess(f, source), lexer())
+def parse_into_ast(f, source=None, webidl=False, **kwargs):
+    return parser(webidl=webidl).parse(preprocess(f, source), lexer(webidl=webidl))

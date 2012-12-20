@@ -297,9 +297,10 @@ class Member(Definition):
     pass
 
 class AttrDef(Member):
-    def __init__(self, type, readonly, declarators, properties):
+    def __init__(self, type, readonly, nullable, declarators, properties):
         self.type = type
         self.readonly = readonly
+        self.nullable = nullable
         self.declarators = declarators
         self.properties = properties
 
@@ -353,17 +354,20 @@ class Parameters(ASTNode):
                self.varargs == that.varargs
 
 class Parameter(ASTNode):
-    def __init__(self, name, type, attributes, properties=[]):
+    def __init__(self, name, type, nullable, direction, default_value, properties=[]):
         self.name = name
         self.type = type
-        self.attributes = attributes
+        self.nullable = nullable
+        self.direction = direction
+        self.default_value = default_value
         self.properties = properties
 
     def __eq__(self, that):
         return isinstance(that, Parameter) and \
             self.name == that.name and \
             self.type == that.type and \
-            self.attributes == that.attributes and \
+            self.direction == that.direction and \
+            self.default_value == that.default_value and \
             self.properties == that.properties
 
 def is_non_string_iterable(value):

@@ -384,17 +384,17 @@ def p_attr_decl(p):
 
 def p_attr_decl_def(p):
     '''
-    attr_decl_def : z_props is_readonly TOK_ATTRIBUTE op_param_type_spec simple_declarator_list
+    attr_decl_def : z_props is_readonly TOK_ATTRIBUTE op_param_type_spec_with_nullable simple_declarator_list
     '''
-    p[0] = AttrDef(type=p[4], readonly=p[2], declarators=p[5], properties=p[1])
+    p[0] = AttrDef(type=p[4][0], readonly=p[2], nullable=p[4][1], declarators=p[5], properties=p[1])
 
 def p_param_type_spec(p):
     '''
-    param_type_spec : op_param_type_spec
+    param_type_spec : op_param_type_spec_with_nullable
         | TOK_VOID
     '''
     if p[1] == 'void':
-        p[0] = BasicTypeNode('void')
+        p[0] = (BasicTypeNode('void'), True)
     else:
         p[0] = p[1]
 
@@ -404,6 +404,19 @@ def p_op_param_type_spec_illegal(p):
         | constr_type_spec
     '''
     raise_syntax_error(p, 'Illegal type specified for parameter or attribute: %s' % p[1])
+
+def p_z_nullable(p):
+    '''
+    z_nullable : TOK_QUESTION
+        |
+    '''
+    p[0] = len(p) > 1
+
+def p_op_param_type_spec_with_nullable(p):
+    '''
+    op_param_type_spec_with_nullable : op_param_type_spec z_nullable
+    '''
+    p[0] = (p[1], p[2])
 
 def p_op_param_type_spec(p):
     '''
@@ -480,20 +493,52 @@ def p_param_decl_list(p):
         p[1].append(p[3])
         p[0] = p[1]
 
+def p_z_default_value(p):
+    '''
+    z_default_value :
+        | TOK_EQUAL const_exp
+    '''
+    if len(p) == 1:
+        p[0] = None
+    else:
+        p[0] = p[2]
+
 def p_param_decl(p):
     '''
-    param_decl : z_props param_attribute param_type_spec simple_declarator
+    param_decl : z_props param_attributes param_type_spec simple_declarator z_default_value
     '''
-    if p[2] is None:
-        raise_syntax_error(p, "Missing direction attribute")
-    p[0] = Parameter(name=p[4], attributes=p[2], type=p[3], properties=p[1])
+    if 'optional' in p[2]:
+        p[2].remove('optional')
+        optional = True
+    else:
+        optional = False
+    if not p[2]:
+        if not p.parser.webidl:
+            raise_syntax_error(p, "Missing direction attribute")
+    if not optional and p[5] is not None:
+        raise_syntax_error(p, "Default value present for non-optional parameter")
+    p[0] = Parameter(name=p[4], type=p[3][0], nullable=p[3][1], direction=p[2], default_value=p[5], properties=p[1])
+
+def p_param_attributes(p):
+    '''
+    param_attributes :
+        | param_attributes param_attribute
+    '''
+    if len(p) == 1:
+        p[0] = set()
+    else:
+        p[0] = p[1]
+        for k in p[2]:
+            if k in p[0]:
+                raise_syntax_error(p, "Parameter attribute %s occurred more than once" % k)
+            p[0].add(k)
 
 def p_param_attribute(p):
     '''
-    param_attribute :
-        | TOK_IN
+    param_attribute : TOK_IN
         | TOK_OUT
         | TOK_INOUT
+        | TOK_OPTIONAL
     '''
     if len(p) == 1:
         p[0] = None
@@ -502,8 +547,10 @@ def p_param_attribute(p):
             p[0] = ['in']
         elif p[1] == 'out':
             p[0] = ['out']
-        else:
+        elif p[1] == 'inout':
             p[0] = ['in', 'out']
+        elif p[1] == 'optional':
+            p[0] = ['optional']
 
 def p_z_raises(p):
     '''
@@ -1105,6 +1152,7 @@ def p_error(p):
 def raise_syntax_error(p, msg):
     raise IDLSyntaxError(msg + ' at line %d' % p.lexer.lineno)
 
-def parser(**kwargs):
+def parser(webidl=False, **kwargs):
     retval = yacc.yacc(tabmodule='parsertab', outputdir=os.path.dirname(__file__), **kwargs)
+    retval.webidl = webidl
     return retval
