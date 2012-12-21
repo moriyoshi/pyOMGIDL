@@ -7,6 +7,16 @@ __all__ = [
     'InterfaceGenerator',
     ]
 
+def render_value(value_node):
+    if isinstance(value_node, (IntegerValue, FloatValue)):
+        return value_node.value
+    elif isinstance(value_node, StringValue):
+        return repr(value_node.value)
+    elif isinstance(value_node, BooleanValue):
+        return repr(value_node.value)
+    else:
+        raise Exception("Unsupported type")
+
 class InterfaceGenerator(object):
     implements(INodeVisitor)
 
@@ -116,7 +126,12 @@ class InterfaceGenerator(object):
             self.write()
 
     def visit_operation_def(self, node):
-        self.write("def %s(%s):" % (node.name.value, ", ".join(item.name.value for item in node.parameters.items)))
+        def gen_arg(item):
+            if item.default_value is not None:
+                return "%s = %s" % (item.name.value, render_value(item.default_value))
+            else:
+                return item.name.value
+        self.write("def %s(%s):" % (node.name.value, ", ".join(gen_arg(item) for item in node.parameters.items)))
         self.indent()
         self.write("pass")
         self.dedent()
