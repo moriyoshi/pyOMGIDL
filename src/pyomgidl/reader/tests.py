@@ -416,13 +416,13 @@ class TokenizerTest(TestCase):
     def testTokenizerProp_key(self):
         self.lex.push_state('PROP')
         self.input('(value)')
-        self.assertToken(('TOK_PROP_VALUE', '(value)'))
+        self.assertToken(('TOK_PROP_ARGS', '(value)'))
         self.assertEof()
 
     def testTokenizerProp_value(self):
         self.lex.push_state('PROP')
         self.input('(aaa)')
-        self.assertToken(('TOK_PROP_VALUE', '(aaa)'))
+        self.assertToken(('TOK_PROP_ARGS', '(aaa)'))
         self.assertEof()
 
     def testTokenizerSqstring(self):
