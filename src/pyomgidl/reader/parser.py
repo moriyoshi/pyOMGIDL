@@ -1044,10 +1044,31 @@ def p_prop_hash(p):
 
 def p_prop_hash_elem(p):
     '''
-    prop_hash_elem : TOK_IDENT TOK_PROP_VALUE
+    prop_hash_elem : TOK_IDENT TOK_PROP_ARGS
+        | TOK_IDENT TOK_EQUAL prop_value
         | TOK_IDENT
     '''
-    p[0] = Property(p[1], len(p) == 3 and p[2] or None)
+    if len(p) == 3:
+        p[0] = Property(p[1], p[2])
+    elif len(p) == 4:
+        p[0] = Property(p[1], p[3])
+    else:
+        p[0] = Property(p[1], None)
+
+def p_prop_value(p):
+    '''
+    prop_value : TOK_IDENT
+        | integer_lit
+        | fixed_pt_lit
+        | floating_pt_lit
+        | string_lit
+        | char_lit
+        | TOK_IDENT TOK_PROP_ARGS
+    '''
+    if len(p) == 3:
+        p[0] = Property(p[1], p[2])
+    else:
+        p[0] = p[1]
 
 def p_ident(p):
     '''

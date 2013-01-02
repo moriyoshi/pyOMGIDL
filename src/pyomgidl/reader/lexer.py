@@ -86,7 +86,7 @@ tokens = [
     'TOK_WSTRING',
     'TOK_FLOATP',
     'TOK_INTEGER',
-    'TOK_PROP_VALUE',
+    'TOK_PROP_ARGS',
     'TOK_NATIVE_TYPE',
     'TOK_IDENT',
     'TOK_SQSTRING',
@@ -136,7 +136,7 @@ t_TOK_LSQB = r'\['
 t_TOK_RSQB = r'\]'
 t_TOK_LT = r'<'
 t_TOK_GT = r'>'
-t_TOK_EQUAL = r'='
+t_INITIAL_PROP_TOK_EQUAL = r'='
 t_TOK_OP_SCOPE = r'::'
 t_TOK_OP_SHL = r'<<'
 t_TOK_OP_SHR = r'>>'
@@ -191,17 +191,17 @@ omgidl_string_tokens = {
     'wchar': 'TOK_WCHAR',
     }
 
-def t_TOK_OCTAL(t):
+def t_INITIAL_PROP_TOK_OCTAL(t):
     r'''0[0-9]+'''
     t.type = 'TOK_INTEGER'
     return t
 
-def t_TOK_HEXDECIMAL(t):
+def t_INITIAL_PROP_TOK_HEXDECIMAL(t):
     r'''0[xX][0-9A-Fa-f]+'''
     t.type = 'TOK_INTEGER'
     return t
 
-def t_TOK_FLOATP(t):
+def t_INITIAL_PROP_TOK_FLOATP(t):
     r'''(?:(?:0|[1-9][0-9]*)?\.[0-9]+|(?P<int_part>0|[1-9][0-9]*))(?P<exp_part>[eE]-?[0-9]+)?(?P<fixed>[dD])?'''
     int_part = t.lexer.lexmatch.group('int_part')
     exp_part = t.lexer.lexmatch.group('exp_part')
@@ -215,15 +215,15 @@ def t_TOK_FLOATP(t):
             t.type = 'TOK_FLOATP'
     return t
 
-t_PROP_TOK_PROP_VALUE = r'''\([^)]*\)'''
+t_PROP_TOK_PROP_ARGS = r'''\([^)]*\)'''
 
 def t_PROP_TOK_RSQB(t):
     r'\]'
     t.lexer.pop_state()
     return t
 
-t_TOK_SQSTRING = r"""'(?:[^']|\\')*'"""
-t_TOK_DQSTRING = r'''"(?:[^"]|\\")*"'''
+t_INITIAL_PROP_TOK_SQSTRING = r"""'(?:[^']|\\')*'"""
+t_INITIAL_PROP_TOK_DQSTRING = r'''"(?:[^"]|\\")*"'''
 
 def t_INITIAL_PROP_NATIVE_TOK_IDENT(t):
     r'''[A-Za-z_][A-Za-z0-9_]*'''
