@@ -428,12 +428,23 @@ def p_op_param_type_spec(p):
     '''
     p[0] = p[1]
 
-def p_is_oneway(p):
+def p_modifiers(p):
     '''
-    is_oneway :
-        | TOK_ONEWAY
+    modifiers :
+        | modifiers modifier
     '''
-    p[0] = len(p) != 1
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[1]
+        p[0].append(p[2])
+
+def p_modifier(p):
+    '''
+    modifier : TOK_ONEWAY
+        | TOK_STATIC
+    '''
+    p[0] = p[1]
 
 def p_op_decl(p):
     '''
@@ -443,9 +454,9 @@ def p_op_decl(p):
 
 def p_op_decl_def(p):
     '''
-    op_decl_def : z_props is_oneway op_type_spec ident parameter_decls z_raises z_context
+    op_decl_def : z_props modifiers op_type_spec ident parameter_decls z_raises z_context
     '''
-    p[0] = OperationDef(name=p[4], return_type=p[3], parameters=p[5], raises=p[6], oneway=p[2], context=p[7], properties=p[1])
+    p[0] = OperationDef(name=p[4], return_type=p[3], parameters=p[5], raises=p[6], modifiers=p[2], context=p[7], properties=p[1])
 
 def p_op_type_spec(p):
     '''

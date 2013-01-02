@@ -324,12 +324,12 @@ class FieldDef(Member):
                self.properties == that.properties
 
 class OperationDef(Member):
-    def __init__(self, name, return_type, parameters, raises, oneway, context, properties=[]):
+    def __init__(self, name, return_type, parameters, raises, modifiers, context, properties=[]):
         self.name = name
         self.return_type = return_type
         self.parameters = parameters
         self.raises = raises
-        self.oneway = oneway
+        self.modifiers = modifiers
         self.context = context
         self.properties = properties
 
@@ -339,7 +339,7 @@ class OperationDef(Member):
                self.return_type == that.return_type and \
                self.parameters == that.parameters and \
                self.raises == that.raises and \
-               self.oneway == that.oneway and \
+               self.modifiers == that.modifiers and \
                self.context == that.context and \
                self.properties == that.properties
 

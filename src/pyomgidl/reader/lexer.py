@@ -116,6 +116,7 @@ tokens = [
     'TOK_QUESTION',
     'TOK_OPTIONAL',
     'TOK_ELLIPSIS',
+    'TOK_STATIC',
     ]
 
 t_TOK_COLON = r':'
@@ -164,7 +165,6 @@ common_string_tokens = {
     'long': 'TOK_LONG',
     'module': 'TOK_MODULE',
     'native': 'TOK_NATIVE',
-    'object': 'TOK_OBJECT',
     'octet': 'TOK_OCTET',
     'oneway': 'TOK_ONEWAY',
     'out': 'TOK_OUT',
@@ -191,6 +191,7 @@ common_string_tokens = {
 omgidl_string_tokens = {
     'char': 'TOK_CHAR',
     'wchar': 'TOK_WCHAR',
+    'object': 'TOK_OBJECT',
     }
 
 def t_INITIAL_PROP_TOK_OCTAL(t):
@@ -236,6 +237,8 @@ def t_INITIAL_PROP_NATIVE_TOK_IDENT(t):
         if t.lexer.webidl:
             if t.value == 'optional':
                 t.type = 'TOK_OPTIONAL'
+            elif t.value == 'static':
+                t.type = 'TOK_STATIC'
         else:
             t_type = omgidl_string_tokens.get(t.value)
             if t_type is not None:
