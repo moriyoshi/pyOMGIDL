@@ -401,7 +401,6 @@ def p_param_type_spec(p):
 def p_op_param_type_spec_illegal(p):
     '''
     op_param_type_spec_illegal : sequence_type
-        | constr_type_spec
     '''
     raise_syntax_error(p, 'Illegal type specified for parameter or attribute: %s' % p[1])
 
@@ -462,25 +461,43 @@ def p_is_varargs(p):
     '''
     is_varargs :
         | TOK_VARARGS
+        | TOK_ELLIPSIS
     '''
-    p[0] = len(p) != 1
+    p[0] = len(p) != 1 and Parameter(name='*', type=BasicTypeNode('any'), nullable=False, direction=['in'], default_value=None, properties=None) or None
 
 def p_is_cvarargs(p):
     '''
     is_cvarargs :
         | TOK_COMMA TOK_VARARGS
+        | TOK_COMMA TOK_ELLIPSIS
     '''
-    p[0] = len(p) != 1
+    p[0] = len(p) != 1 and Parameter(name='*', type=BasicTypeNode('any'), nullable=False, direction=['in'], default_value=None, properties=None) or None
 
 def p_parameter_decls(p):
     '''
     parameter_decls : TOK_LPAREN param_decl_list is_cvarargs TOK_RPAREN
         | TOK_LPAREN is_varargs TOK_RPAREN
+        | TOK_LPAREN param_attributes param_type_spec TOK_ELLIPSIS simple_declarator TOK_RPAREN
     '''
     if len(p) == 4:
         p[0] = Parameters(items=[], varargs=p[2])
-    else:
+    elif len(p) == 5:
         p[0] = Parameters(items=p[2], varargs=p[3])
+    else:
+        attributes = p[2]
+        props = None
+        for attribute in attributes:
+            if isinstance(attribute, Property):
+                if props is not None:
+                    raise_syntax_error(p, "Property [] occurred more than twice")
+                props = attribute
+
+        if props is not None:
+            attributes.remove(props)
+
+        if len(attributes) != 0 and (len(attributes) != 1 or attributes[0] != 'in'):
+            raise_syntax_error(p, "`out' direction specified for a typed variable argument")
+        p[0] = Parameters(items=[], varargs=Parameter(name='*', type=p[3][0], nullable=p[3][1], direction=['in'], default_value=None, properties=props))
 
 def p_param_decl_list(p):
     '''
@@ -505,19 +522,33 @@ def p_z_default_value(p):
 
 def p_param_decl(p):
     '''
-    param_decl : z_props param_attributes param_type_spec simple_declarator z_default_value
+    param_decl : param_attributes param_type_spec simple_declarator z_default_value
     '''
-    if 'optional' in p[2]:
-        p[2].remove('optional')
+    attributes = p[1]
+    type_spec = p[2]
+    name = p[3]
+    default_value = p[4] 
+    props = None
+    for attribute in attributes:
+        if isinstance(attribute, Property):
+            if props is not None:
+                raise_syntax_error(p, "Property [] occurred more than twice")
+            props = attribute
+
+    if props is not None:
+        attributes.remove(props)
+
+    if 'optional' in attributes:
+        attributes.remove('optional')
         optional = True
     else:
         optional = False
-    if not p[2]:
+    if not attributes:
         if not p.parser.webidl:
             raise_syntax_error(p, "Missing direction attribute")
-    if not optional and p[5] is not None:
+    if not optional and default_value is not None:
         raise_syntax_error(p, "Default value present for non-optional parameter")
-    p[0] = Parameter(name=p[4], type=p[3][0], nullable=p[3][1], direction=p[2], default_value=p[5], properties=p[1])
+    p[0] = Parameter(name=name, type=type_spec[0], nullable=type_spec[1], direction=attributes, default_value=default_value, properties=props)
 
 def p_param_attributes(p):
     '''
@@ -525,13 +556,13 @@ def p_param_attributes(p):
         | param_attributes param_attribute
     '''
     if len(p) == 1:
-        p[0] = set()
+        p[0] = []
     else:
         p[0] = p[1]
         for k in p[2]:
             if k in p[0]:
                 raise_syntax_error(p, "Parameter attribute %s occurred more than once" % k)
-            p[0].add(k)
+            p[0].append(k)
 
 def p_param_attribute(p):
     '''
@@ -539,9 +570,10 @@ def p_param_attribute(p):
         | TOK_OUT
         | TOK_INOUT
         | TOK_OPTIONAL
+        | TOK_LSQB enter_prop prop_hash TOK_RSQB
     '''
-    if len(p) == 1:
-        p[0] = None
+    if len(p) == 5:
+        p[0] = [p[3]]
     else:
         if p[1] == 'in':
             p[0] = ['in']

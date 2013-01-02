@@ -115,6 +115,7 @@ tokens = [
     'TOK_EQUAL',
     'TOK_QUESTION',
     'TOK_OPTIONAL',
+    'TOK_ELLIPSIS',
     ]
 
 t_TOK_COLON = r':'
@@ -141,6 +142,7 @@ t_TOK_OP_SCOPE = r'::'
 t_TOK_OP_SHL = r'<<'
 t_TOK_OP_SHR = r'>>'
 t_TOK_QUESTION = r'\?'
+t_TOK_ELLIPSIS = r'\.\.\.'
 
 common_string_tokens = {
     'any': 'TOK_ANY',
