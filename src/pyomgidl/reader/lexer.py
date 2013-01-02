@@ -302,7 +302,7 @@ def t_ANY_BLOCK_COMMENT(t):
     r'''/\*(?:[^/]|[^*]/)*\*/'''
 
 def t_ANY_error(t):
-    raise IDLSyntaxError('Illegal token: %s' % t.value)
+    raise IDLSyntaxError('Illegal token: %s' % t.value, t.lexer.lineno)
 
 def lexer(webidl=False, **kwargs):
     retval = lex.lex(lextab='lextab', optimize=1, outputdir=os.path.dirname(__file__), **kwargs)

@@ -1145,12 +1145,12 @@ def p_sqstring(p):
 
 def p_error(p):
     if p is not None:
-        raise IDLSyntaxError('Syntax error at line %d' % p.lexer.lineno)
+        raise IDLSyntaxError('Syntax error', p.lexer.lineno)
     else:
         raise IDLSyntaxError('Unexpected EOF')
 
 def raise_syntax_error(p, msg):
-    raise IDLSyntaxError(msg + ' at line %d' % p.lexer.lineno)
+    raise IDLSyntaxError(msg, p.lexer.lineno)
 
 def parser(webidl=False, **kwargs):
     retval = yacc.yacc(tabmodule='parsertab', outputdir=os.path.dirname(__file__), **kwargs)
