@@ -119,7 +119,7 @@ tokens = [
 
 t_TOK_COLON = r':'
 t_TOK_SEMICOLON = r';'
-t_TOK_COMMA = r','
+t_INITIAL_PROP_TOK_COMMA = r','
 t_TOK_LBRACE = r'\{'
 t_TOK_RBRACE = r'\}'
 t_TOK_LPAREN = r'\('

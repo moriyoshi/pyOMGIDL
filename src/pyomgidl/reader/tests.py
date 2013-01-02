@@ -626,3 +626,7 @@ class ParserTest(TestCase):
                 properties=[tree.Property('prop')]),
             self.parse('''[prop] native NativeType;''').definitions[0])
 
+    def testPropertyRegression(self):
+        self.assertEqual(
+            tree.Interface(name=tree.Identifier('abc'), properties=[tree.Property('prop1'), tree.Property('prop2')]),
+            self.parse('''[prop1,prop2] interface abc {};''').definitions[0])
