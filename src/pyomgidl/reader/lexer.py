@@ -117,6 +117,19 @@ tokens = [
     'TOK_OPTIONAL',
     'TOK_ELLIPSIS',
     'TOK_STATIC',
+    'TOK_SETTER',
+    'TOK_GETTER',
+    'TOK_CREATOR',
+    'TOK_DELETER',
+    'TOK_LEGACYCALLER',
+    'TOK_PARTIAL',
+    'TOK_SERIALIZER',
+    'TOK_STRINGIFIER',
+    'TOK_UNRESTRICTED',
+    'TOK_CALLBACK',
+    'TOK_INHERIT',
+    'TOK_IMPLEMENTS',
+    'TOK_DICTIONARY',
     ]
 
 t_TOK_COLON = r':'
@@ -149,10 +162,8 @@ common_string_tokens = {
     'any': 'TOK_ANY',
     'attribute': 'TOK_ATTRIBUTE',
     'boolean': 'TOK_BOOLEAN',
-    'case': 'TOK_CASE',
     'const': 'TOK_CONST',
     'context': 'TOK_CONTEXT',
-    'default': 'TOK_DEFAULT',
     'double': 'TOK_DOUBLE',
     'enum': 'TOK_ENUM',
     'exception': 'TOK_EXCEPTION',
@@ -174,16 +185,13 @@ common_string_tokens = {
     'short': 'TOK_SHORT',
     'string': 'TOK_STRING',
     'struct': 'TOK_STRUCT',
-    'switch': 'TOK_SWITCH',
     'true': 'TOK_TRUE',
-    'typecode': 'TOK_TYPECODE',
     'typedef': 'TOK_TYPEDEF',
     'union': 'TOK_UNION',
     'unsigned': 'TOK_UNSIGNED',
     'varargs': 'TOK_VARARGS',
     'valuetype': 'TOK_VALUETYPE',
     'void': 'TOK_VOID',
-    'wstring': 'TOK_WSTRING',
     'TypeCode': 'TOK_TYPECODE',
     'Object': 'TOK_OBJECT',
     }
@@ -192,6 +200,29 @@ omgidl_string_tokens = {
     'char': 'TOK_CHAR',
     'wchar': 'TOK_WCHAR',
     'object': 'TOK_OBJECT',
+    'default': 'TOK_DEFAULT',
+    'case': 'TOK_CASE',
+    'wstring': 'TOK_WSTRING',
+    'switch': 'TOK_SWITCH',
+    'typecode': 'TOK_TYPECODE',
+    }
+
+webidl_string_tokens = {
+    'optional': 'TOK_OPTIONAL',
+    'static': 'TOK_STATIC',
+    'getter': 'TOK_GETTER',
+    'setter': 'TOK_SETTER',
+    'creator': 'TOK_CREATOR',
+    'deleter': 'TOK_DELETER',
+    'legacycaller': 'TOK_LEGACYCALLER',
+    'partial': 'TOK_PARTIAL',
+    'serializer': 'TOK_SERIALIZER',
+    'stringifier': 'TOK_STRINGIFIER',
+    'unrestricted': 'TOK_UNRESTRICTED',
+    'callback': 'TOK_CALLBACK',
+    'inherit': 'TOK_INHERIT',
+    'implements': 'TOK_IMPLEMENTS',
+    'dictionary': 'TOK_DICTIONARY',
     }
 
 def t_INITIAL_PROP_TOK_OCTAL(t):
@@ -235,10 +266,9 @@ def t_INITIAL_PROP_NATIVE_TOK_IDENT(t):
         t.type = t_type
     else:
         if t.lexer.webidl:
-            if t.value == 'optional':
-                t.type = 'TOK_OPTIONAL'
-            elif t.value == 'static':
-                t.type = 'TOK_STATIC'
+            t_type = webidl_string_tokens.get(t.value)
+            if t_type is not None:
+                t.type = t_type
         else:
             t_type = omgidl_string_tokens.get(t.value)
             if t_type is not None:

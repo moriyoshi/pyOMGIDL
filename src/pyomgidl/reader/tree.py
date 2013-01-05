@@ -127,16 +127,18 @@ class ExceptionDecl(Definition):
                self.properties == that.properties
 
 class ConstDecl(Definition):
-    def __init__(self, name, type, value):
+    def __init__(self, name, type, value, properties=[]):
         self.name = name
         self.type = type
         self.value = value
+        self.properties = properties
 
     def __eq__(self, that):
         return isinstance(that, ConstDecl) and \
                self.name == that.name and \
                self.type == that.type and \
-               self.value == that.value
+               self.value == that.value and \
+               self.properties == that.properties
 
 class StringValue(ValueNode):
     pass
@@ -296,18 +298,34 @@ class InvertOp(UnaryOpNode):
 class Member(Definition):
     pass
 
+class AttrDeclarator(ASTNode):
+    def __init__(self, identifier, getter_raises=[], setter_raises=[]):
+        self.identifier = identifier
+        self.getter_raises = getter_raises
+        self.setter_raises = setter_raises
+
+    def __eq__(self, that):
+        return isinstance(that, AttrDeclarator) and \
+               self.identifier == that.identifier and \
+               self.getter_raises == that.getter_raises and \
+               self.setter_raises == that.setter_raises
+
 class AttrDef(Member):
-    def __init__(self, type, readonly, nullable, declarators, properties):
+    def __init__(self, type, modifiers, nullable, declarators, properties=[]):
         self.type = type
-        self.readonly = readonly
+        self.modifiers = modifiers
         self.nullable = nullable
         self.declarators = declarators
         self.properties = properties
 
+    @property
+    def readonly(self):
+        return 'readonly' in self.modifiers
+
     def __eq__(self, that):
         return isinstance(that, AttrDef) and \
                self.type == that.type and \
-               self.readonly == that.readonly and \
+               self.modifiers == that.modifiers and \
                self.declarators == that.declarators and \
                self.properties == that.properties
 
@@ -344,7 +362,7 @@ class OperationDef(Member):
                self.properties == that.properties
 
 class Parameters(ASTNode):
-    def __init__(self, items, varargs=False):
+    def __init__(self, items, varargs=None):
         self.items = items
         self.varargs = varargs
 

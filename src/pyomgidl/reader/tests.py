@@ -518,9 +518,13 @@ class TokenizerTest(TestCase):
 class ParserTest(TestCase):
     def setUp(self):
         self.parser = parser(debug=True)
+        self.parser_webidl = parser(webidl=True, debug=True)
 
-    def parse(self, text):
-        return self.parser.parse(text, lexer=lexer())
+    def parse(self, text, webidl=False):
+        if not webidl:
+            return self.parser.parse(text, lexer=lexer())
+        else:
+            return self.parser_webidl.parse(text, lexer=lexer(webidl=True))
 
     def tearDown(self):
         pass
@@ -626,7 +630,45 @@ class ParserTest(TestCase):
                 properties=[tree.Property('prop')]),
             self.parse('''[prop] native NativeType;''').definitions[0])
 
+    def testProperty(self):
+        self.assertEqual(
+            tree.Interface(name=tree.Identifier('abc'), properties=[tree.Property('prop1'), tree.Property('prop2')]),
+            self.parse('''[prop1][prop2] interface abc {};''').definitions[0])
+
     def testPropertyRegression(self):
         self.assertEqual(
             tree.Interface(name=tree.Identifier('abc'), properties=[tree.Property('prop1'), tree.Property('prop2')]),
             self.parse('''[prop1,prop2] interface abc {};''').definitions[0])
+
+    def testDuplicateModifiers(self):
+        self.assertEqual(
+            tree.Interface(name=tree.Identifier('abc'), body=[
+                tree.OperationDef(
+                    name=tree.Identifier('test'),
+                    return_type=tree.BasicTypeNode('void'),
+                    parameters=tree.Parameters([]),
+                    raises=None,
+                    modifiers=['static'],
+                    context=None,
+                    properties=[]
+                    )
+                ]),
+            self.parse('''interface abc { static void test(); };''', webidl=True).definitions[0])
+        try:
+            self.parse('''interface abc { static static void test(); };''', webidl=True)
+            self.fail('Exception has not been raised')
+        except IDLSyntaxError:
+            self.assertTrue(True)
+
+    def testDuplicateProperties(self):
+        try:
+            self.parse('''[prop1, prop1] interface abc {};''')
+            self.fail('Exception has not been raised')
+        except IDLSyntaxError:
+            self.assertTrue(True)
+        try:
+            self.parse('''[prop1][prop1] interface abc {};''')
+            self.fail('Exception has not been raised')
+        except IDLSyntaxError:
+            self.assertTrue(True)
+

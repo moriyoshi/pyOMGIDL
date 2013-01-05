@@ -122,7 +122,7 @@ class InterfaceGenerator(object):
             if node.readonly:
                 doc += '[readonly] '
             doc += self.resolve_type(node.type)
-            self.write("%s = zope.interface.Attribute('''%s''')" % (declarator.value, doc))
+            self.write("%s = zope.interface.Attribute('''%s''')" % (declarator.identifier.value, doc))
             self.write()
 
     def visit_operation_def(self, node):

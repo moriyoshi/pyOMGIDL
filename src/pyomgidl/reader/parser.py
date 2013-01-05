@@ -112,10 +112,12 @@ def p_interface_cache_ident(p):
 
 def p_interface(p):
     '''
-    interface : z_props TOK_INTERFACE interface_catch_ident z_inheritance TOK_LBRACE interface_body TOK_RBRACE
-        | z_props TOK_INTERFACE interface_catch_ident
+    interface : modifiers_and_props TOK_INTERFACE interface_catch_ident z_inheritance TOK_LBRACE interface_body TOK_RBRACE
+        | modifiers_and_props TOK_INTERFACE interface_catch_ident
     '''
-    p[0] = Interface(properties=p[1], name=p[3], supers=(len(p) > 4 and p[4] or None), body=(len(p) > 4 and p[6] or None))
+    if p[1][0]:
+        raise_syntax_error(p, 'No modifiers are allowed for interface')
+    p[0] = Interface(properties=p[1][1], name=p[3], supers=(len(p) > 4 and p[4] or None), body=(len(p) > 4 and p[6] or None))
 
 def p_inheritance(p):
     '''
@@ -160,7 +162,6 @@ def p_export(p):
         | op_decl TOK_SEMICOLON
         | attr_decl TOK_SEMICOLON
         | const_decl TOK_SEMICOLON
-        | valuetype_decl TOK_SEMICOLON
         | codefrag
         | useless_semicolon
     '''
@@ -168,25 +169,28 @@ def p_export(p):
 
 def p_type_decl(p):
     '''
-    type_decl : type_decl_def
-    '''
-    p[0] = p[1]
-
-def p_type_decl_def(p):
-    '''
-    type_decl_def : z_props TOK_TYPEDEF type_declarator
+    type_decl : typedef_decl
         | struct_type
         | union_type
         | enum_type
         | valuetype_decl
-        | z_props TOK_NATIVE simple_declarator z_native_type
+        | dictionary_decl
+        | callback_decl
+        | native_decl
     '''
-    if len(p) == 2:
-        p[0] = p[1]
-    elif len(p) == 4 and p[2] == 'typedef':
-        p[0] = TypeDef(type=p[3][0], declarators=p[3][1], properties=p[1])
-    else:
-        p[0] = NativeDecl(declarator=p[3], native_type=p[4], properties=p[1])
+    p[0] = p[1]
+
+def p_typedef_decl(p):
+    '''
+    typedef_decl : modifiers_and_props TOK_TYPEDEF type_declarator
+    '''
+    p[0] = TypeDef(type=p[3][0], declarators=p[3][1], properties=p[1][1])
+
+def p_native_decl(p):
+    '''
+    native_decl : modifiers_and_props TOK_NATIVE simple_declarator z_native_type
+    '''
+    p[0] = NativeDecl(declarator=p[3], native_type=p[4], properties=p[1][1])
 
 def p_z_native_type(p):
     '''
@@ -233,14 +237,14 @@ def p_z_ident_catch(p):
 
 def p_struct_type(p):
     '''
-    struct_type : z_props TOK_STRUCT z_ident_catch TOK_LBRACE struct_member_list TOK_RBRACE
+    struct_type : modifiers_and_props TOK_STRUCT z_ident_catch TOK_LBRACE struct_member_list TOK_RBRACE
     ''' 
 
 def p_valuetype_decl(p):
     '''
-    valuetype_decl : z_props TOK_VALUETYPE z_ident_catch z_value_inheritance_spec z_valuetype_body
+    valuetype_decl : modifiers_and_props TOK_VALUETYPE z_ident_catch z_value_inheritance_spec z_valuetype_body
     '''
-    p[0] = ValueType(properties=p[1], name=p[3], super=p[4], body=p[5])
+    p[0] = ValueType(properties=p[1][1], name=p[3], super=p[4], body=p[5])
 
 def p_z_value_inheritance_spec(p):
     '''
@@ -288,7 +292,7 @@ def p_valuetype_member(p):
 
 def p_union_type(p):
     '''
-    union_type : z_props TOK_UNION z_ident_catch TOK_SWITCH TOK_LPAREN switch_type_spec TOK_RPAREN TOK_LBRACE switch_body TOK_RBRACE
+    union_type : modifiers_and_props TOK_UNION z_ident_catch TOK_SWITCH TOK_LPAREN switch_type_spec TOK_RPAREN TOK_LBRACE switch_body TOK_RBRACE
     '''
 
 def p_switch_type_spec(p):
@@ -336,27 +340,15 @@ def p_case_label(p):
 
 def p_const_decl(p):
     '''
-    const_decl : const_decl_def
+    const_decl : modifiers_and_props TOK_CONST const_type ident TOK_EQUAL const_exp
     '''
-    p[0] = p[1]
-
-def p_const_decl_def(p):
-    '''
-    const_decl_def : TOK_CONST const_type ident TOK_EQUAL const_exp
-    '''
-    p[0] = ConstDecl(name=p[3], type=p[2], value=p[5])
+    p[0] = ConstDecl(name=p[4], type=p[3], value=p[6], properties=p[1])
 
 def p_except_decl(p):
     '''
-    except_decl : except_decl_def
+    except_decl : modifiers_and_props TOK_EXCEPTION ident TOK_LBRACE except_member_list TOK_RBRACE
     '''
-    p[0] = p[1]
-
-def p_except_decl_def(p):
-    '''
-    except_decl_def : z_props TOK_EXCEPTION ident TOK_LBRACE except_member_list TOK_RBRACE
-    '''
-    p[0] = ExceptionDecl(name=p[3], members=p[5], properties=p[1])
+    p[0] = ExceptionDecl(name=p[3], members=p[5], properties=p[1][1])
 
 def p_except_member_list(p):
     '''
@@ -369,24 +361,78 @@ def p_except_member_list(p):
         p[1].append(p[2])
         p[0] = p[1]
 
-def p_is_readonly(p):
+def p_dictionary_decl(p):
     '''
-    is_readonly :
-        | TOK_READONLY
+    dictionary_decl : modifiers_and_props TOK_DICTIONARY z_ident_catch z_value_inheritance_spec z_dictionary_body
     '''
-    p[0] = len(p) != 1
+
+def p_z_dictionary_body(p):
+    '''
+    z_dictionary_body :
+        | TOK_LBRACE dictionary_member_list TOK_RBRACE
+    '''
+    p[0] = len(p) == 4 and p[2] or None
+
+def p_dictionary_member_list(p):
+    '''
+    dictionary_member_list :
+        | dictionary_member_list dictionary_member
+    '''
+
+def p_dictionary_member(p):
+    '''
+    dictionary_member : modifiers_and_props op_param_type_spec_with_nullable  simple_declarator_pair_list TOK_SEMICOLON
+    '''
+
+def p_callback_decl(p):
+    '''
+    callback_decl : modifiers_and_props TOK_CALLBACK TOK_EQUAL op_type_spec parameter_decls
+    '''
 
 def p_attr_decl(p):
     '''
-    attr_decl : attr_decl_def
+    attr_decl : modifiers_and_props TOK_ATTRIBUTE z_props op_param_type_spec_with_nullable attr_declarator_list
     '''
-    p[0] = p[1]
+    p[0] = AttrDef(type=p[4][0], modifiers=p[1][0], nullable=p[4][1], declarators=p[5], properties=p[1][1] + p[3])
 
-def p_attr_decl_def(p):
+def p_attr_declarator_list(p):
     '''
-    attr_decl_def : z_props is_readonly TOK_ATTRIBUTE op_param_type_spec_with_nullable simple_declarator_list
+    attr_declarator_list : attr_declarator
+        | attr_declarator_list TOK_COMMA attr_declarator
     '''
-    p[0] = AttrDef(type=p[4][0], readonly=p[2], nullable=p[4][1], declarators=p[5], properties=p[1])
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[1].append(p[3])
+        p[0] = p[1]
+
+def p_attr_declarator(p):
+    '''
+    attr_declarator : simple_declarator attr_raises_spec_list
+    '''
+    p[0] = AttrDeclarator(p[1], p[2][0], p[2][1])
+
+
+def p_attr_raises_spec_list(p):
+    '''
+    attr_raises_spec_list :
+        | attr_raises_spec_list attr_raises_spec
+    '''
+    if len(p) == 1:
+        p[0] = ([], [])
+    else:
+        if p[2][0] == 'getter':
+            p[1][0].extend(p[2][1])
+        elif p[2][0] == 'setter':
+            p[1][1].extend(p[2][1])
+        p[0] = p[1]
+
+def p_attr_raises_spec(p):
+    '''
+    attr_raises_spec : TOK_GETTER raises
+        | TOK_SETTER raises
+    '''
+    p[0] = (p[1], p[2])
 
 def p_param_type_spec(p):
     '''
@@ -428,35 +474,42 @@ def p_op_param_type_spec(p):
     '''
     p[0] = p[1]
 
-def p_modifiers(p):
+def p_modifiers_and_props(p):
     '''
-    modifiers :
-        | modifiers modifier
+    modifiers_and_props :
+        | modifiers_and_props op_modifier_or_prop
     '''
     if len(p) == 1:
-        p[0] = []
+        p[0] = ([], [])
     else:
+        for modifier in p[2]:
+            if isinstance(modifier, Property):
+                if modifier in p[1][1]:
+                    raise_syntax_error(p, "Property `%s' applied more than once" % modifier.key)
+                p[1][1].append(modifier)
+            else:
+                if modifier in p[1][0]:
+                    raise_syntax_error(p, "Duplicate `%s' modifier" % modifier)
+                p[1][0].append(modifier)
         p[0] = p[1]
-        p[0].append(p[2])
 
-def p_modifier(p):
+def p_op_modifier_or_prop(p):
     '''
-    modifier : TOK_ONEWAY
+    op_modifier_or_prop : TOK_ONEWAY
         | TOK_STATIC
+        | TOK_READONLY
+        | TOK_LSQB enter_prop prop_hash optional_trailing_comma TOK_RSQB
     '''
-    p[0] = p[1]
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[3]
 
 def p_op_decl(p):
     '''
-    op_decl : op_decl_def
+    op_decl : modifiers_and_props op_type_spec ident parameter_decls z_raises z_context
     '''
-    p[0] = p[1]
-
-def p_op_decl_def(p):
-    '''
-    op_decl_def : z_props modifiers op_type_spec ident parameter_decls z_raises z_context
-    '''
-    p[0] = OperationDef(name=p[4], return_type=p[3], parameters=p[5], raises=p[6], modifiers=p[2], context=p[7], properties=p[1])
+    p[0] = OperationDef(name=p[3], return_type=p[2], parameters=p[4], raises=p[5], modifiers=p[1][0], context=p[6], properties=p[1][1])
 
 def p_op_type_spec(p):
     '''
@@ -488,23 +541,14 @@ def p_parameter_decls(p):
     '''
     parameter_decls : TOK_LPAREN param_decl_list is_cvarargs TOK_RPAREN
         | TOK_LPAREN is_varargs TOK_RPAREN
-        | TOK_LPAREN param_attributes param_type_spec TOK_ELLIPSIS simple_declarator TOK_RPAREN
+        | TOK_LPAREN param_attributes_and_props param_type_spec TOK_ELLIPSIS simple_declarator TOK_RPAREN
     '''
     if len(p) == 4:
         p[0] = Parameters(items=[], varargs=p[2])
     elif len(p) == 5:
         p[0] = Parameters(items=p[2], varargs=p[3])
     else:
-        attributes = p[2]
-        props = None
-        for attribute in attributes:
-            if isinstance(attribute, Property):
-                if props is not None:
-                    raise_syntax_error(p, "Property [] occurred more than twice")
-                props = attribute
-
-        if props is not None:
-            attributes.remove(props)
+        attributes, props = p[2]
 
         if len(attributes) != 0 and (len(attributes) != 1 or attributes[0] != 'in'):
             raise_syntax_error(p, "`out' direction specified for a typed variable argument")
@@ -533,21 +577,12 @@ def p_z_default_value(p):
 
 def p_param_decl(p):
     '''
-    param_decl : param_attributes param_type_spec simple_declarator z_default_value
+    param_decl : param_attributes_and_props param_type_spec simple_declarator z_default_value
     '''
-    attributes = p[1]
+    attributes, props = p[1]
     type_spec = p[2]
     name = p[3]
     default_value = p[4] 
-    props = None
-    for attribute in attributes:
-        if isinstance(attribute, Property):
-            if props is not None:
-                raise_syntax_error(p, "Property [] occurred more than twice")
-            props = attribute
-
-    if props is not None:
-        attributes.remove(props)
 
     if 'optional' in attributes:
         attributes.remove('optional')
@@ -561,23 +596,28 @@ def p_param_decl(p):
         raise_syntax_error(p, "Default value present for non-optional parameter")
     p[0] = Parameter(name=name, type=type_spec[0], nullable=type_spec[1], direction=attributes, default_value=default_value, properties=props)
 
-def p_param_attributes(p):
+def p_param_attributes_and_props(p):
     '''
-    param_attributes :
-        | param_attributes param_attribute
+    param_attributes_and_props :
+        | param_attributes_and_props param_attribute_and_prop
     '''
     if len(p) == 1:
-        p[0] = []
+        p[0] = ([], [])
     else:
+        for attribute in p[2]:
+            if isinstance(attribute, Property):
+                if attribute in p[1][1]:
+                    raise_syntax_error(p, "Property `%s' applied more than once" % attribute.key)
+                p[1][1].append(attribute)
+            else:
+                if attribute in p[1][0]:
+                    raise_syntax_error(p, "Duplicate parameter attribute `%s" % attribute)
+                p[1][0].append(attribute)
         p[0] = p[1]
-        for k in p[2]:
-            if k in p[0]:
-                raise_syntax_error(p, "Parameter attribute %s occurred more than once" % k)
-            p[0].append(k)
 
-def p_param_attribute(p):
+def p_param_attribute_and_prop(p):
     '''
-    param_attribute : TOK_IN
+    param_attribute_and_prop : TOK_IN
         | TOK_OUT
         | TOK_INOUT
         | TOK_OPTIONAL
@@ -763,7 +803,7 @@ def p_literal(p):
 
 def p_enum_type(p):
     '''
-    enum_type : z_props TOK_ENUM z_ident_catch TOK_LBRACE enumerator_list TOK_RBRACE
+    enum_type : modifiers_and_props TOK_ENUM z_ident_catch TOK_LBRACE enumerator_list TOK_RBRACE
     '''
 
 def p_scoped_name(p):
@@ -815,20 +855,20 @@ def p_enumerator_list(p):
 
 def p_struct_member_list(p):
     '''
-    struct_member_list : member
+    struct_member_list :
         | struct_member_list member
     '''
-    if len(p) == 2:
-        p[0] = p[1]
+    if len(p) == 1:
+        p[0] = []
     else:
         p[1].append(p[2])
         p[0] = p[1]
 
 def p_member(p):
     ''' 
-    member : z_props type_spec declarator_list TOK_SEMICOLON
+    member : modifiers_and_props type_spec declarator_list TOK_SEMICOLON
     '''
-    p[0] = FieldDef(type=p[2], declarators=p[3], properties=p[1])
+    p[0] = FieldDef(type=p[2], declarators=p[3], properties=p[1][1])
 
 def p_base_type_spec(p):
     '''
@@ -1047,6 +1087,23 @@ def p_simple_declarator_list(p):
         p[1].append(p[3])
         p[0] = p[1]
 
+def p_simple_declarator_pair_list(p):
+    '''
+    simple_declarator_pair_list : simple_declarator_pair
+        | simple_declarator_pair_list TOK_COMMA simple_declarator_pair
+    '''
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[1].append(p[3])
+        p[0] = p[1]
+
+def p_simple_declarator_pair(p):
+    '''
+    simple_declarator_pair : simple_declarator
+        | simple_declarator TOK_EQUAL const_exp
+    '''
+
 def p_array_declarator(p):
     '''
     array_declarator : ident fixed_array_size_list
@@ -1206,6 +1263,12 @@ def p_sqstring(p):
     sqstring : TOK_SQSTRING
     '''
     p[0] = StringValue(p[2])
+
+def p_optional_trailing_comma(p):
+    '''
+    optional_trailing_comma :
+        | TOK_COMMA
+    '''
 
 def p_error(p):
     if p is not None:
